@@ -1,0 +1,22 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>Test coordonnée image</title>
+<script type="text/javascript">
+function getLocationPct(event)
+{
+    var img = document.getElementById("image")
+    var pct_x = Math.round((event.clientX - img.offsetLeft) * 1000 / img.clientWidth) / 10;
+    var pct_y = Math.round((event.clientY - img.offsetTop) * 1000 / img.clientHeight) / 10;
+    document.getElementById("info_point").innerHTML = "x:" + pct_x + "%, y:" + pct_y + "%";
+}
+</script>
+
+</head>
+<body>
+
+Coordonnées du clic : <span id="info_point"></span>
+
+<div id="imageDiv" style="margin: 15px;" onmouseup="getLocationPct(event);"><img id="image" src="imagePont.jpg" alt="image" /></div> 
+</body>
+</html>
