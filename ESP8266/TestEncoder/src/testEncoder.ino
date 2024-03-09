@@ -30,6 +30,10 @@ void setup() {
 }
 
 void loop() {
-  encoder.getAngle(resultValue);
-  delay(1000);
+  if (encoder.active()){
+    encoder.loop();
+  } else {
+    delay(1000);
+    encoder.getAngle(resultValue);
+  }
 }

@@ -9,7 +9,9 @@
 		class RotationSensor {
 			public:
 				RotationSensor(float _offsetAngle, uint8_t _rxPin,  uint8_t _txPin, bool _traceDebug);
-				void begin();
+				void begin(void);
+				void loop(void);
+				bool active(void);
 				RotationSensor& setErrorCb(std::function<Modbus::ResultCode(Modbus::ResultCode event, uint16_t transactionId, void* data)> errorCb);
 				RotationSensor& setSuccessCb(std::function<Modbus::ResultCode(Modbus::FunctionCode fc, const Modbus::RequestData data)> successCb);
 				void getAngle(uint16_t result);

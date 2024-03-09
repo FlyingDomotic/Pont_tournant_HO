@@ -7,7 +7,7 @@ StepperCommand stepper(pulsePin, directionPin, enablePin, degreesPerStep, microS
 
 void setup() {
   Serial.begin(74880);
-  Serial.printf("Rotate motor test: will rotate motor %f° in one way and reverse",degrees);
+  Serial.printf("Rotate motor test: will rotate motor %.1f° in one way and reverse\n",degrees);
   stepper.begin(2.0);
 }
 

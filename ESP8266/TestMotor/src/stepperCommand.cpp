@@ -46,9 +46,6 @@ void StepperCommand::setRPM(float _RPM){
   float stepsPerRotation = 360.0 * microStepsPerStep / degreesPerStep;
   // Compute 1 step duration (in seconds)
   float oneStepDuration = 60 / (_RPM * stepsPerRotation);
-  if (traceDebug) {
-      Serial.printf("Each step will last %f ms to make %f RPM at %f° per step at %d micro-steps", oneStepDuration * 1000, _RPM, degreesPerStep, microStepsPerStep);
-  }
   // Check for driver's minimum duration
   if ((oneStepDuration / 2.0) > (driverMinimalMicroSec * 1E6)) {
       Serial.println("*** Step duration is too low, set to 1 ***");
@@ -56,15 +53,18 @@ void StepperCommand::setRPM(float _RPM){
       oneStepDuration = 1;
   }
   stepDuration = oneStepDuration;
+  if (traceDebug) {
+      Serial.printf("Each step will last %.2f ms to make %.1f RPM at %.1f° per step at %d micro-steps\n", oneStepDuration * 1000, _RPM, degreesPerStep, microStepsPerStep);
+  }
 }
 
 //  Moves motor giving specified angle
 //       input:
 //           _angle: angle to rotate motor, in degrees
 void StepperCommand::rotateAngle(float _angle){
-  unsigned long microSteps = _angle * microStepsPerStep / degreesPerStep;
+  unsigned long microSteps = abs(_angle) * microStepsPerStep / degreesPerStep;
   if (traceDebug) {
-      Serial.printf("Motor needs %ld micro-steps of %fs to turn about %f° in %f s", microSteps,stepDuration, _angle, microSteps * stepDuration);
+      Serial.printf("Motor needs %ld micro-steps of %.0fms to turn about %.1f° in %.1f s\n", microSteps, stepDuration * 1000.0, _angle, microSteps * stepDuration);
   }
 
   // Set correct direction
@@ -94,7 +94,7 @@ void StepperCommand::rotateAngle(float _angle){
 unsigned long StepperCommand::microStepsForAngle(float _angle){
   unsigned long microSteps = abs(_angle) * microStepsPerStep / degreesPerStep;
   if (traceDebug) {
-      Serial.printf("Motor needs %ld micro-steps of %fs to turn about %f° in %f s", microSteps,stepDuration, _angle, microSteps * stepDuration);
+      Serial.printf("Motor needs %ld micro-steps of %.0fms to turn about %f° in %f s\n", microSteps, stepDuration * 1000.0, _angle, microSteps * stepDuration);
   }
   // Set correct direction
   if (_angle < 0.0) {

@@ -16,17 +16,27 @@ RotationSensor::RotationSensor(float _offsetAngle, uint8_t _rxPin,  uint8_t _txP
 }
 
 //  Initialize modbus communication
-void RotationSensor::begin(){
+void RotationSensor::begin(void){
   modbusSerial.begin(9600, SWSERIAL_8N1, rxPin, txPin);
   modbusRtu.begin(&modbusSerial);
   modbusRtu.onRequestSuccess(successCb);
   modbusRtu.master();
 }
 
+// Loop for this module
+void RotationSensor::loop (void) {
+  if (modbusRtu.slave()) {
+    modbusRtu.task();
+  }
+}
+
+bool RotationSensor::active(void) {
+  return modbusRtu.slave();
+}
 // Ask modbus sensor for motor angle. Returned value is in degrees, corrected by an offset.
 void RotationSensor::getAngle(uint16_t result){
   if (traceDebug) {
-    Serial.print("Reading angle");
+    Serial.print("Reading angle: ");
   }
   if (!modbusRtu.slave()) {                           // Check if no transaction in progress
     if (errorCb) {
