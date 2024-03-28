@@ -10,11 +10,8 @@
 //       _microStepsPerStep: number of microsteps per step (usually 1, 2, 4, 8...)
 //       _driverMinimalMicroSec: minimum microseconds time driver needs to acquire a signal (around 2-3 uS)
 //       _traceDebug: True to trace debug message
-StepperCommand::StepperCommand(uint8_t _pulsePin, uint8_t _directionPin, uint8_t _enablePin, float _degreesPerStep, uint16_t _microStepsPerStep, uint8_t _driverMinimalMicroSec, bool _traceDebug) {
+StepperCommand::StepperCommand(uint8_t _pulsePin, uint8_t _directionPin, uint8_t _enablePin, bool _traceDebug) {
   // Internal variables
-  degreesPerStep = _degreesPerStep;                // Motor's number of degrees per step
-  microStepsPerStep = _microStepsPerStep;          // Drivers number of micro-steps per step
-  driverMinimalMicroSec = _driverMinimalMicroSec;  // Drivers minimal signal duration in micro-seconds
   requiredRPM = 1;                                 // Required motor RPM
   traceDebug = _traceDebug;                        // Trace debug messages?
   pulsePin = _pulsePin;                            // Driver's pulse Pin
@@ -22,26 +19,12 @@ StepperCommand::StepperCommand(uint8_t _pulsePin, uint8_t _directionPin, uint8_t
   enablePin = _enablePin;                          // Driver's enable Pin
 }
 
-//  Pin initialization
-void StepperCommand::begin(float _RPM){
-  if (enablePin != -1) {
-    pinMode(enablePin, OUTPUT);
-    digitalWrite(enablePin, 0);
-    delayMicroseconds(driverMinimalMicroSec);
-  }
-  digitalWrite(pulsePin, 0);
-  pinMode(pulsePin, OUTPUT);
-  digitalWrite(directionPin, 0);
-  pinMode(directionPin, OUTPUT);
-  if (_RPM) {
-    setRPM(_RPM);
-  }
-}
+void StepperCommand::setParams(float _degreesPerStep, uint16_t _microStepsPerStep, uint8_t _driverMinimalMicroSec, float _RPM, bool _traceDebug) {
+  degreesPerStep = _degreesPerStep;                // Motor's number of degrees per step
+  microStepsPerStep = _microStepsPerStep;          // Drivers number of micro-steps per step
+  driverMinimalMicroSec = _driverMinimalMicroSec;  // Drivers minimal signal duration in micro-seconds
+  traceDebug = _traceDebug;                        // Trace debug messages?
 
-//  Set step duration giving expected RPM (rotation per minute)
-//       input:
-//           _RPM : expected rotations per minute
-void StepperCommand::setRPM(float _RPM){
   // Compute steps needed to make 1 full turn
   float stepsPerRotation = 360.0 * microStepsPerStep / degreesPerStep;
   // Compute 1 step duration (in seconds)
@@ -58,22 +41,34 @@ void StepperCommand::setRPM(float _RPM){
   }
 }
 
+//  Pin initialization
+void StepperCommand::begin(){
+  if (enablePin != -1) {
+    pinMode(enablePin, OUTPUT);
+    digitalWrite(enablePin, 0);
+    delayMicroseconds(driverMinimalMicroSec);
+  }
+  digitalWrite(pulsePin, 0);
+  pinMode(pulsePin, OUTPUT);
+  setDirection(1);
+  pinMode(directionPin, OUTPUT);
+}
+
 //  Moves motor giving specified angle
 //       input:
 //           _angle: angle to rotate motor, in degrees
 void StepperCommand::rotateAngle(float _angle){
   unsigned long microSteps = abs(_angle) * microStepsPerStep / degreesPerStep;
   if (traceDebug) {
-      Serial.printf("Motor needs %ld micro-steps of %.0fms to turn about %.1f° in %.1f s\n", microSteps, stepDuration * 1000.0, _angle, microSteps * stepDuration);
+      Serial.printf("Motor needs %ld micro-steps of %.0fms to turn about %.1f ° in %.1f s\n", microSteps, stepDuration * 1000.0, _angle, microSteps * stepDuration);
   }
 
   // Set correct direction
   if (_angle < 0.0) {
-    digitalWrite(directionPin, 1);
+    setDirection(-1);
   } else {
-    digitalWrite(directionPin, 0);
+    setDirection(1);
   }
-  delayMicroseconds(driverMinimalMicroSec);
   
   // Rotate motor the right number of micro-steps
   for (unsigned long i=0; i < microSteps; i++){
@@ -98,17 +93,33 @@ unsigned long StepperCommand::microStepsForAngle(float _angle){
   }
   // Set correct direction
   if (_angle < 0.0) {
-    digitalWrite(directionPin, 1);
+    setDirection(-1);
   } else {
-    digitalWrite(directionPin, 0);
+    setDirection(1);
   }
-  delayMicroseconds(driverMinimalMicroSec);
   return microSteps;
 }
 
 //  Returns angle corresponding to one micro step
 float StepperCommand::anglePerMicroStep(void){
-  return degreesPerStep / microStepsPerStep;
+  return degreesPerStep * currentDirection / microStepsPerStep;
+}
+
+// Set stepper direction
+void StepperCommand::setDirection(int16_t direction) {
+  if (direction < 0 ) {
+    currentDirection = -1;
+    digitalWrite(directionPin, 1);
+  } else {
+    currentDirection = 1;
+    digitalWrite(directionPin, 0);
+  }
+  delayMicroseconds(driverMinimalMicroSec);
+}
+
+// Returns current direction
+uint8_t StepperCommand::getDirection(void) {
+  return currentDirection;
 }
 
 //  Turns stepper one micro step

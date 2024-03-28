@@ -8,8 +8,7 @@
 //     _rxPin                     // Modbus RX pin
 //     _txPin                     // Modbus TX pin
 //     _traceDebug                // Trace debug messages?
-RotationSensor::RotationSensor(float _offsetAngle, uint8_t _rxPin,  uint8_t _txPin, bool _traceDebug) {
-  offsetAngle = _offsetAngle;     // Angle of zero degrees position (depends on hardware)
+RotationSensor::RotationSensor(uint8_t _rxPin,  uint8_t _txPin, bool _traceDebug) {
   rxPin = _rxPin;                 // Modbus RX pin
   txPin = _txPin;                 // Modbus TX pin
   traceDebug = _traceDebug;       // Trace debug messages?
@@ -19,8 +18,13 @@ RotationSensor::RotationSensor(float _offsetAngle, uint8_t _rxPin,  uint8_t _txP
 void RotationSensor::begin(void){
   modbusSerial.begin(9600, SWSERIAL_8N1, rxPin, txPin);
   modbusRtu.begin(&modbusSerial);
-  modbusRtu.onRequestSuccess(successCb);
   modbusRtu.master();
+}
+
+//  Set parameters
+void RotationSensor::setParams(float _offsetAngle, bool _traceDebug) {
+  offsetAngle = _offsetAngle;     // Angle of zero degrees position (depends on hardware)
+  traceDebug = _traceDebug;       // Trace debug messages?
 }
 
 // Loop for this module
@@ -34,15 +38,15 @@ bool RotationSensor::active(void) {
   return modbusRtu.slave();
 }
 // Ask modbus sensor for motor angle. Returned value is in degrees, corrected by an offset.
-void RotationSensor::getAngle(uint16_t result){
+void RotationSensor::getAngle(uint16_t *result){
   if (traceDebug) {
-    Serial.print("Reading angle: ");
+      Serial.print("Reading angle: ");
   }
-  if (!modbusRtu.slave()) {                           // Check if no transaction in progress
-    if (errorCb) {
-      modbusRtu.readHreg(1, 0, &result, 1, errorCb);  // Send Read Hreg from Modbus Server
+  if (!modbusRtu.slave()) {                         // Check if no transaction in progress
+    if (callback) {
+      modbusRtu.readHreg(1, 0, result, 1, callback); // Send Read Hreg from Modbus Server
     } else {
-      modbusRtu.readHreg(1, 0, &result, 1);              // Send Read Hreg from Modbus Server
+      modbusRtu.readHreg(1, 0, result, 1, 0);       // Send Read Hreg from Modbus Server
     }
   }
 }
@@ -56,13 +60,8 @@ float RotationSensor::computeAngle(uint16_t valueRead) {
     return floatModulo(((360.0 * valueRead) / 65536.0) - offsetAngle,  360.0);
 }
 
-RotationSensor& RotationSensor::setErrorCb(std::function<Modbus::ResultCode(Modbus::ResultCode event, uint16_t transactionId, void* data)> errorCb) {
-  this->errorCb = errorCb;
-  return *this;
-}
-
-RotationSensor& RotationSensor::setSuccessCb(std::function<Modbus::ResultCode(Modbus::FunctionCode fc, const Modbus::RequestData data)> successCb) {
-  this->successCb = successCb;
+RotationSensor& RotationSensor::setCallback(std::function<Modbus::ResultCode(Modbus::ResultCode event, uint16_t transactionId, void* data)> callback) {
+  this->callback = callback;
   return *this;
 }
 
